@@ -1,20 +1,66 @@
-﻿// raytracing-sandbox.cpp : このファイルには 'main' 関数が含まれています。プログラム実行の開始と終了がそこで行われます。
-//
+﻿#include <iostream>
+#include <fstream>
+#include <cmath>
+#include "ray.h"
+#include "vec3.h"
 
-#include <iostream>
+float hit_sphere(const Vec3& center, float radius, const Ray& r)
+{
+	Vec3 oc = r.origin() - center;
+	float a = dot(r.direction(), r.direction());
+	float b = 2.0 * dot(oc, r.direction());
+	float c = dot(oc, oc) - radius * radius;
+	float discriminant = b * b - 4 * a * c;
+	if (discriminant < 0)
+	{
+		return -1.0;
+	}
+	else
+	{
+		return (-b - std::sqrt(discriminant)) / (2.0 * a);
+	}
+}
+
+Vec3 color(const Ray& r)
+{
+	float t = hit_sphere(Vec3(0, 0, -1), 0.5, r);
+	if (t > 0.0)
+	{
+		Vec3 N = unit_vector(r.point_at_parameter(t) - Vec3(0, 0, -1));
+		return 0.5 * Vec3(N.x() + 1, N.y() + 1, N.z() + 1);
+	}
+	Vec3 u = unit_vector(r.direction());
+	t = 0.5 * (u.y() + 1.0);
+	return (1.0 - t) * Vec3(1.0, 1.0, 1.0) + t * Vec3(0.5, 0.7, 1.0);
+}
 
 int main()
 {
-    std::cout << "Hello World!\n";
+	std::fstream ofs("ppm.txt");
+	ofs.clear();
+
+	int nx = 200;
+	int ny = 100;
+	
+	Vec3 ll_corner(-2.0, -1.0, -1.0);
+	Vec3 origin(0, 0, 0);
+	Vec3 vertical(0.0, 2.0, 0.0);
+	Vec3 horizontal(4.0, 0.0, 0.0);
+
+	ofs << "P3\n" << nx << " " << ny << "\n255\n";
+	
+	for (int j = ny - 1; j >= 0; --j)
+	{
+		for (int i = 0; i < nx; ++i)
+		{
+			float u = float(i) / float(nx);
+			float v = float(j) / float(ny);
+			Ray r(origin, ll_corner + v*vertical + u*horizontal);
+			auto c = color(r);
+			int ir = int(255.99 * c.r());
+			int ig = int(255.99 * c.g());
+			int ib = int(255.99 * c.b());
+			ofs << ir << " " << ig << " " << ib << "\n";
+		}
+	}
 }
-
-// プログラムの実行: Ctrl + F5 または [デバッグ] > [デバッグなしで開始] メニュー
-// プログラムのデバッグ: F5 または [デバッグ] > [デバッグの開始] メニュー
-
-// 作業を開始するためのヒント: 
-//    1. ソリューション エクスプローラー ウィンドウを使用してファイルを追加/管理します 
-//   2. チーム エクスプローラー ウィンドウを使用してソース管理に接続します
-//   3. 出力ウィンドウを使用して、ビルド出力とその他のメッセージを表示します
-//   4. エラー一覧ウィンドウを使用してエラーを表示します
-//   5. [プロジェクト] > [新しい項目の追加] と移動して新しいコード ファイルを作成するか、[プロジェクト] > [既存の項目の追加] と移動して既存のコード ファイルをプロジェクトに追加します
-//   6. 後ほどこのプロジェクトを再び開く場合、[ファイル] > [開く] > [プロジェクト] と移動して .sln ファイルを選択します
