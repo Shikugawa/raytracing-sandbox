@@ -1,65 +1,63 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <cmath>
+#include <vector>
+#include <random>
+#include <utility>
+#include <limits>
 #include "ray.h"
+#include "sphere.h"
 #include "vec3.h"
+#include "camera.h"
 
-float hit_sphere(const Vec3& center, float radius, const Ray& r)
+Vec3 color(const Ray& r, const HitableList& hl)
 {
-	Vec3 oc = r.origin() - center;
-	float a = dot(r.direction(), r.direction());
-	float b = 2.0 * dot(oc, r.direction());
-	float c = dot(oc, oc) - radius * radius;
-	float discriminant = b * b - 4 * a * c;
-	if (discriminant < 0)
+	hit_record rec;
+	if (hl.hit(r, 0.0, std::numeric_limits<float>::max(), rec))
 	{
-		return -1.0;
+		return 0.5 * Vec3(rec.normal.x() + 1, rec.normal.y() + 1, rec.normal.z() + 1);
 	}
 	else
 	{
-		return (-b - std::sqrt(discriminant)) / (2.0 * a);
+		Vec3 u = unit_vector(r.direction());
+		float t = 0.5 * (u.y() + 1.0);
+		return (1.0 - t) * Vec3(1.0, 1.0, 1.0) + t * Vec3(0.5, 0.7, 1.0);
 	}
-}
-
-Vec3 color(const Ray& r)
-{
-	float t = hit_sphere(Vec3(0, 0, -1), 0.5, r);
-	if (t > 0.0)
-	{
-		Vec3 N = unit_vector(r.point_at_parameter(t) - Vec3(0, 0, -1));
-		return 0.5 * Vec3(N.x() + 1, N.y() + 1, N.z() + 1);
-	}
-	Vec3 u = unit_vector(r.direction());
-	t = 0.5 * (u.y() + 1.0);
-	return (1.0 - t) * Vec3(1.0, 1.0, 1.0) + t * Vec3(0.5, 0.7, 1.0);
 }
 
 int main()
 {
+	std::random_device rnd;
+	std::mt19937 mt(rnd());
+	std::uniform_int_distribution<> rand(0, 1);
+
 	std::fstream ofs("ppm.txt");
 	ofs.clear();
 
 	int nx = 200;
 	int ny = 100;
 	
-	Vec3 ll_corner(-2.0, -1.0, -1.0);
-	Vec3 origin(0, 0, 0);
-	Vec3 vertical(0.0, 2.0, 0.0);
-	Vec3 horizontal(4.0, 0.0, 0.0);
+	Camera camera;
 
+	HitableList objects;
+	objects.emplace_back(std::make_unique<Sphere>(Vec3(0, 0, -1), 0.5));
+	objects.emplace_back(std::make_unique<Sphere>(Vec3(0, -100.5, -1), 100));
+	
 	ofs << "P3\n" << nx << " " << ny << "\n255\n";
 	
 	for (int j = ny - 1; j >= 0; --j)
 	{
 		for (int i = 0; i < nx; ++i)
 		{
-			float u = float(i) / float(nx);
-			float v = float(j) / float(ny);
-			Ray r(origin, ll_corner + v*vertical + u*horizontal);
-			auto c = color(r);
+			float u = float(rand(mt) * i) / float(nx);
+			float v = float(rand(mt) * j) / float(ny);
+		
+			auto c = color(camera.GetRay(u, v), objects);
+			
 			int ir = int(255.99 * c.r());
 			int ig = int(255.99 * c.g());
 			int ib = int(255.99 * c.b());
+			
 			ofs << ir << " " << ig << " " << ib << "\n";
 		}
 	}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 #include "ray.h"
 
 struct hit_record
@@ -16,21 +17,25 @@ public:
 	virtual bool hit(const Ray& r, float t_min, float t_max, hit_record& rec) const = 0;
 };
 
-class HitableList : public Hitable
+using HitablePtr = std::unique_ptr<Hitable>;
+
+class HitableList : public std::vector<HitablePtr>
 {
 public:
+	using Base = std::vector<HitablePtr>;
+	
 	HitableList() = default;
-	explicit HitableList(std::vector<Hitable> _list) : list(_list)
+	explicit HitableList(std::vector<HitablePtr> _list) : Base(std::move(_list))
 	{}
 
-	bool hit(const Ray& r, float t_min, float t_max, hit_record& rec)
+	bool hit(const Ray& r, float t_min, float t_max, hit_record& rec) const
 	{
 		hit_record tmp;
 		bool hit_anything = false;
 		double closest_so_far = t_max;
-		for (const auto& hitable : list)
+		for (auto it = Base::begin(); it != Base::end(); ++it)
 		{
-			if (hitable.hit(r, t_min, closest_so_far, tmp))
+			if (it->get()->hit(r, t_min, closest_so_far, tmp))
 			{
 				hit_anything = true;
 				closest_so_far = tmp.t;
@@ -39,6 +44,4 @@ public:
 		}
 		return hit_anything;
 	}
-private:
-	std::vector<Hitable> list;
 };

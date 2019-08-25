@@ -154,13 +154,14 @@
     <ClCompile Include="raytracing-sandbox.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="ppm.txt" />
-  </ItemGroup>
-  <ItemGroup>
+    <ClInclude Include="camera.h" />
     <ClInclude Include="hitable.h" />
     <ClInclude Include="ray.h" />
     <ClInclude Include="sphere.h" />
     <ClInclude Include="vec3.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ppm.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
